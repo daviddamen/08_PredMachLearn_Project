@@ -6,24 +6,33 @@ output: html_document
 Executive Summary
 =================
 
-
+In this project we analyze the possibility of predicting how well barbell lifts are performed based on sensor data of accelerometers attached to the belt, forearm, arm, and dumbell of six participants. These participants performed barbell lifts correctly and incorrectly in 5 different ways. The analysis shows that it is possible to predict how well the exercise is performed with a high degree of accuracy.
 
 Data Loading and Cleaning
 =========================
+
+R packages that are useful in the analysis are loaded first. Then, a csv file with training data is loaded into a dataframe.
 
 ```{r}
 library(caret)
 library(randomForest)
 
 df <- read.csv("pml-training.csv", na.strings=c("NA", "", "#DIV/0!"))
+```
+
+Exploratory analysis of the data shows that the first seven columns contain metadata that cannot be used in prediction, so they are removed. Furthermore, many of the columns contain NA values so these columns are removed as well.
+
+```{r}
 df <- df[,-(1:7)]
 
 df_na_count <- apply(df, 2, function(x){ sum(is.na(x)) })
 df <- df[, which(df_na_count == 0)]
 ```
 
-Data Splitting
-==============
+Cross Validation
+================
+
+Before we start the analysis, the seed is set to be able to get reproducible results. Then we prepare for cross validation by splitting up our data set into two pieces, one for training, on for testing. For training, we used 75% of the measurements, picked at random. The remaining 25% is used for testing and accuracy measurements.
 
 ```{r}
 set.seed(666)
@@ -36,11 +45,21 @@ testing <- df[-inTrain,]
 Machine Learning
 ================
 
+The Random Forest technique was chosen as the machine learning algorithm to perform the prediction.
+
 ```{r}
 model <- randomForest(y=training$classe, x=training[, 1:(length(names(training)) - 1)])
+```
+
+Looking at the variable importance, there is a pretty wide coverage across the variables. Accelerometer data from the belt and dumbbell do look like they provide the most information to power the prediction model.
+
+```{r}
+varImpPlot(model)
+```
+
+Then, the model is evaluated with the test set data and the confusion matrix is computed to find the out of sample error. The confusion matrix shows that, on the testing data, we achieve a high accuracy of 99.7% (95% CI between 99.5 and 99.8%).
+
+```{r}
 testing.predict <- predict(model, newdata=testing)
 confusionMatrix(testing$classe, testing.predict)
-
-plot(model, log="y")
-varImpPlot(model)
 ```
