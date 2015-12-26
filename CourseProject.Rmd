@@ -1,0 +1,46 @@
+---
+title: "Practical Machine Learning - Course Project"
+output: html_document
+---
+
+Executive Summary
+=================
+
+
+
+Data Loading and Cleaning
+=========================
+
+```{r}
+library(caret)
+library(randomForest)
+
+df <- read.csv("pml-training.csv", na.strings=c("NA", "", "#DIV/0!"))
+df <- df[,-(1:7)]
+
+df_na_count <- apply(df, 2, function(x){ sum(is.na(x)) })
+df <- df[, which(df_na_count == 0)]
+```
+
+Data Splitting
+==============
+
+```{r}
+set.seed(666)
+
+inTrain <- createDataPartition(df$classe, p=0.75, list=FALSE)
+training <- df[inTrain,]
+testing <- df[-inTrain,]
+```
+
+Machine Learning
+================
+
+```{r}
+model <- randomForest(y=training$classe, x=training[, 1:(length(names(training)) - 1)])
+testing.predict <- predict(model, newdata=testing)
+confusionMatrix(testing$classe, testing.predict)
+
+plot(model, log="y")
+varImpPlot(model)
+```
